@@ -7,7 +7,8 @@
 
 #include "DistrhoPlugin.hpp"
 #include "CParamSmooth.hpp"
-#include "extra/ScopedPointer.hpp"
+
+#include <memory>
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -41,7 +42,7 @@ class ImGuiPluginDSP : public Plugin
     double fSampleRate = getSampleRate();
     float fGainDB = 0.0f;
     float fGainLinear = 1.0f;
-    ScopedPointer<CParamSmooth> fSmoothGain = new CParamSmooth(20.0f, fSampleRate);
+    std::unique_ptr<CParamSmooth> fSmoothGain = std::make_unique<CParamSmooth>(20.0f, fSampleRate);
 
 public:
    /**
