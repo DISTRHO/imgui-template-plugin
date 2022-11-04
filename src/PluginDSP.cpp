@@ -2,7 +2,7 @@
  * ImGui plugin example
  * Copyright (C) 2021 Jean Pierre Cimalando <jp-dev@inbox.ru>
  * Copyright (C) 2021-2022 Filipe Coelho <falktx@falktx.com>
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: ISC
  */
 
 #include "DistrhoPlugin.hpp"
@@ -89,7 +89,7 @@ protected:
     */
     const char* getLicense() const noexcept override
     {
-        return "MIT";
+        return "ISC";
     }
 
    /**
