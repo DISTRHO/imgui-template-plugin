@@ -52,3 +52,13 @@ jobs:
       - uses: distrho/dpf-cmake-action@v1
         with:
           target: pluginval
+
+  source:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+      - uses: distrho/dpf-cmake-action@v1
+        with:
+          target: source

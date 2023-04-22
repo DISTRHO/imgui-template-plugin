@@ -1,34 +1,26 @@
 /*
  * ImGui plugin example
  * Copyright (C) 2021 Jean Pierre Cimalando <jp-dev@inbox.ru>
- * Copyright (C) 2021-2022 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2021-2023 Filipe Coelho <falktx@falktx.com>
  * SPDX-License-Identifier: ISC
  */
 
 #include "DistrhoPlugin.hpp"
-#include "CParamSmooth.hpp"
+#include "extra/ValueSmoother.hpp"
 
-#include <memory>
+START_NAMESPACE_DISTRHO
 
 // --------------------------------------------------------------------------------------------------------------------
 
-#ifndef MIN
-#define MIN(a,b) ( (a) < (b) ? (a) : (b) )
-#endif
+static constexpr const float CLAMP(float v, float min, float max)
+{
+    return std::min(max, std::max(min, v));
+}
 
-#ifndef MAX
-#define MAX(a,b) ( (a) > (b) ? (a) : (b) )
-#endif
-
-#ifndef CLAMP
-#define CLAMP(v, min, max) (MIN((max), MAX((min), (v))))
-#endif
-
-#ifndef DB_CO
-#define DB_CO(g) ((g) > -90.0f ? powf(10.0f, (g) * 0.05f) : 0.0f)
-#endif
-
-START_NAMESPACE_DISTRHO
+static constexpr const float DB_CO(float g)
+{
+    return g > -90.f ? std::pow(10.f, g * 0.05f) : 0.f;
+}
 
 // --------------------------------------------------------------------------------------------------------------------
 
@@ -39,10 +31,8 @@ class ImGuiPluginDSP : public Plugin
         kParamCount
     };
 
-    double fSampleRate = getSampleRate();
     float fGainDB = 0.0f;
-    float fGainLinear = 1.0f;
-    std::unique_ptr<CParamSmooth> fSmoothGain = std::make_unique<CParamSmooth>(20.0f, fSampleRate);
+    ExponentialValueSmoother fSmoothGain;
 
 public:
    /**
@@ -52,6 +42,9 @@ public:
     ImGuiPluginDSP()
         : Plugin(kParamCount, 0, 0) // parameters, programs, states
     {
+        fSmoothGain.setSampleRate(getSampleRate());
+        fSmoothGain.setTargetValue(DB_CO(0.f));
+        fSmoothGain.setTimeConstant(0.020f); // 20ms
     }
 
 protected:
@@ -125,7 +118,7 @@ protected:
 
         parameter.ranges.min = -90.0f;
         parameter.ranges.max = 30.0f;
-        parameter.ranges.def = -0.0f;
+        parameter.ranges.def = 0.0f;
         parameter.hints = kParameterIsAutomatable;
         parameter.name = "Gain";
         parameter.shortName = "Gain";
@@ -158,7 +151,7 @@ protected:
         DISTRHO_SAFE_ASSERT_RETURN(index == 0,);
 
         fGainDB = value;
-        fGainLinear = DB_CO(CLAMP(value, -90.0, 30.0));
+        fSmoothGain.setTargetValue(DB_CO(CLAMP(value, -90.0, 30.0)));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
@@ -169,7 +162,7 @@ protected:
     */
     void activate() override
     {
-        fSmoothGain->flush();
+        fSmoothGain.clearToTargetValue();
     }
 
    /**
@@ -189,7 +182,7 @@ protected:
         // apply gain against all samples
         for (uint32_t i=0; i < frames; ++i)
         {
-            const float gain = fSmoothGain->process(fGainLinear);
+            const float gain = fSmoothGain.next();
             outL[i] = inpL[i] * gain;
             outR[i] = inpR[i] * gain;
         }
@@ -205,8 +198,7 @@ protected:
     */
     void sampleRateChanged(double newSampleRate) override
     {
-        fSampleRate = newSampleRate;
-        fSmoothGain->setSampleRate(newSampleRate);
+        fSmoothGain.setSampleRate(newSampleRate);
     }
 
     // ----------------------------------------------------------------------------------------------------------------
