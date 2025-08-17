@@ -5,7 +5,7 @@
 
 cmake_minimum_required(VERSION 3.7...3.31)
 
-set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD 17)
 
 set(NAME imgui-demo-plugin)
 project(${NAME})

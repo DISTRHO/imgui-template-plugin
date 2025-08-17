@@ -1,7 +1,7 @@
 /*
  * ImGui plugin example
  * Copyright (C) 2021 Jean Pierre Cimalando <jp-dev@inbox.ru>
- * Copyright (C) 2021-2023 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2021-2025 Filipe Coelho <falktx@falktx.com>
  * SPDX-License-Identifier: ISC
  */
 
@@ -12,12 +12,7 @@ START_NAMESPACE_DISTRHO
 
 // --------------------------------------------------------------------------------------------------------------------
 
-static constexpr const float CLAMP(float v, float min, float max)
-{
-    return std::min(max, std::max(min, v));
-}
-
-static constexpr const float DB_CO(float g)
+static constexpr const float db2coef(float g)
 {
     return g > -90.f ? std::pow(10.f, g * 0.05f) : 0.f;
 }
@@ -43,7 +38,7 @@ public:
         : Plugin(kParamCount, 0, 0) // parameters, programs, states
     {
         fSmoothGain.setSampleRate(getSampleRate());
-        fSmoothGain.setTargetValue(DB_CO(0.f));
+        fSmoothGain.setTargetValue(db2coef(0.f));
         fSmoothGain.setTimeConstant(0.020f); // 20ms
     }
 
@@ -116,9 +111,9 @@ protected:
     {
         DISTRHO_SAFE_ASSERT_RETURN(index == 0,);
 
-        parameter.ranges.min = -90.0f;
-        parameter.ranges.max = 30.0f;
-        parameter.ranges.def = 0.0f;
+        parameter.ranges.min = -90.f;
+        parameter.ranges.max = 30.f;
+        parameter.ranges.def = 0.f;
         parameter.hints = kParameterIsAutomatable;
         parameter.name = "Gain";
         parameter.shortName = "Gain";
@@ -135,7 +130,7 @@ protected:
     */
     float getParameterValue(uint32_t index) const override
     {
-        DISTRHO_SAFE_ASSERT_RETURN(index == 0, 0.0f);
+        DISTRHO_SAFE_ASSERT_RETURN(index == 0, 0.f);
 
         return fGainDB;
     }
@@ -151,7 +146,7 @@ protected:
         DISTRHO_SAFE_ASSERT_RETURN(index == 0,);
 
         fGainDB = value;
-        fSmoothGain.setTargetValue(DB_CO(CLAMP(value, -90.0, 30.0)));
+        fSmoothGain.setTargetValue(db2coef(std::clamp(value, -90.f, 30.f)));
     }
 
     // ----------------------------------------------------------------------------------------------------------------
