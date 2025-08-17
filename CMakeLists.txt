@@ -1,9 +1,9 @@
 # DISTRHO Plugin Framework (DPF)
 # Copyright (C) 2021 Jean Pierre Cimalando <jp-dev@inbox.ru>
-# Copyright (C) 2021-2022 Filipe Coelho <falktx@falktx.com>
+# Copyright (C) 2021-2025 Filipe Coelho <falktx@falktx.com>
 # SPDX-License-Identifier: ISC
 
-cmake_minimum_required(VERSION 3.7)
+cmake_minimum_required(VERSION 3.7...3.31)
 
 set(CMAKE_CXX_STANDARD 14)
 
