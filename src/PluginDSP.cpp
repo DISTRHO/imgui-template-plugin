@@ -28,7 +28,7 @@ class ImGuiPluginDSP : public Plugin
     };
 
     enum BandParameters {
-        kBandParameterEnabled,
+        kBandParameterType,
         kBandParameterGain,
         kBandParameterFreq,
         kBandParameterQ,
@@ -39,12 +39,12 @@ class ImGuiPluginDSP : public Plugin
         kParamBypass,
         kParamReset,
         kParamMainVolume,
-        kParamHighPassEnabled,
+        kParamHighPassType,
         kParamHighPassFreq,
         kParamHighPassQ,
         kParamBandsStart,
         kParamBandsEnd = kParamBandsStart + kBandParameterCount * kNumBands - 1,
-        kParamLowPassEnabled,
+        kParamLowPassType,
         kParamLowPassFreq,
         kParamLowPassQ,
         kParamCount
@@ -89,12 +89,12 @@ public:
         filters.highpass.setBiquad(bq_type_highpass,
                                    fParameters[kParamHighPassFreq] / sampleRate,
                                    fParameters[kParamHighPassQ],
-                                   0.0);
+                                   -12.0);
 
         filters.lowpass.setBiquad(bq_type_lowpass,
                                   fParameters[kParamLowPassFreq] / sampleRate,
                                   fParameters[kParamLowPassQ],
-                                  0.0);
+                                  -12.0);
 
         for (uint8_t i = 0; i < kNumBands; ++i)
         {
@@ -186,13 +186,6 @@ protected:
     */
     void initParameter(uint32_t index, Parameter& parameter) override
     {
-        const auto initEnabled = [&parameter]
-        {
-            parameter.ranges.min = 0.f;
-            parameter.ranges.max = 1.f;
-            parameter.ranges.def = 0.f;
-            parameter.hints = kParameterIsAutomatable | kParameterIsBoolean | kParameterIsInteger;
-        };
         const auto initGain = [&parameter]
         {
             parameter.ranges.min = -12.f;
@@ -236,12 +229,20 @@ protected:
             parameter.enumValues.values = new ParameterEnumerationValue[1];
             parameter.enumValues.values[0] = { -90.f, "-inf" };
             break;
-        case kParamHighPassEnabled:
-            initEnabled();
+        case kParamHighPassType:
+            parameter.ranges.min = 0.f;
+            parameter.ranges.max = 1.f;
+            parameter.ranges.def = 0.f;
+            parameter.hints = kParameterIsAutomatable | kParameterIsInteger;
             parameter.groupId = kParameterGroupHighPass;
-            parameter.name = "High Pass Enabled";
-            parameter.shortName = "HP Enabled";
-            parameter.symbol = "HighPassEnabled";
+            parameter.name = "High Pass Type";
+            parameter.shortName = "HP Type";
+            parameter.symbol = "HighPassType";
+            parameter.enumValues.count = 2;
+            parameter.enumValues.restrictedMode = true;
+            parameter.enumValues.values = new ParameterEnumerationValue[2];
+            parameter.enumValues.values[0] = { 0.f, "Off" };
+            parameter.enumValues.values[1] = { 1.f, "High Pass" };
             break;
         case kParamHighPassFreq:
             initFreq();
@@ -267,11 +268,18 @@ protected:
 
             switch (static_cast<BandParameters>((index - kParamBandsStart) % kBandParameterCount))
             {
-            case kBandParameterEnabled:
-                initEnabled();
-                parameter.name = "Band " + bandstr + " Enabled";
-                parameter.shortName = "B" + bandstr + " Enabled";
-                parameter.symbol = "B" + bandstr + "Enabled";
+            case kBandParameterType:
+                parameter.ranges.min = 0.f;
+                parameter.ranges.max = 1.f;
+                parameter.ranges.def = 0.f;
+                parameter.name = "Band " + bandstr + " Type";
+                parameter.shortName = "B" + bandstr + " Type";
+                parameter.symbol = "B" + bandstr + "Type";
+                parameter.enumValues.count = 2;
+                parameter.enumValues.restrictedMode = true;
+                parameter.enumValues.values = new ParameterEnumerationValue[2];
+                parameter.enumValues.values[0] = { 0.f, "Off" };
+                parameter.enumValues.values[1] = { 1.f, "Peak" };
                 break;
             case kBandParameterGain:
                 initGain();
@@ -298,12 +306,20 @@ protected:
             }
             break;
         }
-        case kParamLowPassEnabled:
-            initEnabled();
+        case kParamLowPassType:
+            parameter.ranges.min = 0.f;
+            parameter.ranges.max = 1.f;
+            parameter.ranges.def = 0.f;
+            parameter.hints = kParameterIsAutomatable | kParameterIsInteger;
             parameter.groupId = kParameterGroupLowPass;
-            parameter.name = "Low Pass Enabled";
-            parameter.shortName = "LP Enabled";
-            parameter.symbol = "LowPassEnabled";
+            parameter.name = "Low Pass Type";
+            parameter.shortName = "LP Type";
+            parameter.symbol = "LowPassType";
+            parameter.enumValues.count = 2;
+            parameter.enumValues.restrictedMode = true;
+            parameter.enumValues.values = new ParameterEnumerationValue[2];
+            parameter.enumValues.values[0] = { 0.f, "Off" };
+            parameter.enumValues.values[1] = { 1.f, "Low Pass" };
             break;
         case kParamLowPassFreq:
             initFreq();
@@ -385,14 +401,14 @@ protected:
         case kParamMainVolume:
             fSmoothVolume.setTargetValue(db2coef(std::clamp(value, -90.f, 30.f)));
             break;
-        case kParamHighPassEnabled:
+        case kParamHighPassType:
             if (value > 0.5f)
                 filters.highpass.setFc(std::clamp(fParameters[kParamHighPassFreq] / getSampleRate(), 0.0005, 0.42));
             else
                 filters.highpass.setFc(0.0005);
             break;
         case kParamHighPassFreq:
-            if (fParameters[kParamHighPassEnabled] > 0.5f)
+            if (fParameters[kParamHighPassType] > 0.5f)
                 filters.highpass.setFc(std::clamp(value / getSampleRate(), 0.0005, 0.42));
             break;
         case kParamHighPassQ:
@@ -407,14 +423,14 @@ protected:
 
             switch (static_cast<BandParameters>((index - kParamBandsStart) % kBandParameterCount))
             {
-            case kBandParameterEnabled:
+            case kBandParameterType:
                 if (value > 0.5f)
                     filter.setPeakGain(std::clamp(fParameters[start + kBandParameterGain], -12.f, 12.f));
                 else
                     filter.setPeakGain(0.0);
                 break;
             case kBandParameterGain:
-                if (fParameters[start + kBandParameterEnabled] > 0.5f)
+                if (fParameters[start + kBandParameterType] > 0.5f)
                     filter.setPeakGain(std::clamp(value, -12.f, 12.f));
                 break;
             case kBandParameterFreq:
@@ -428,14 +444,14 @@ protected:
             }
             break;
         }
-        case kParamLowPassEnabled:
+        case kParamLowPassType:
             if (value > 0.5f)
                 filters.lowpass.setFc(std::clamp(fParameters[kParamLowPassFreq] / getSampleRate(), 0.0005, 0.42));
             else
                 filters.lowpass.setFc(0.42);
             break;
         case kParamLowPassFreq:
-            if (fParameters[kParamLowPassEnabled] > 0.5f)
+            if (fParameters[kParamLowPassType] > 0.5f)
                 filters.lowpass.setFc(std::clamp(value / getSampleRate(), 0.0005, 0.42));
             break;
         case kParamLowPassQ:
