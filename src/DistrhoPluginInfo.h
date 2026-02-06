@@ -1,9 +1,11 @@
 /*
  * ImGui plugin example
  * Copyright (C) 2021 Jean Pierre Cimalando <jp-dev@inbox.ru>
- * Copyright (C) 2021-2022 Filipe Coelho <falktx@falktx.com>
+ * Copyright (C) 2021-2026 Filipe Coelho <falktx@falktx.com>
  * SPDX-License-Identifier: ISC
  */
+
+#pragma once
 
 /**
    The plugin name.@n
@@ -16,13 +18,13 @@
    Number of audio inputs the plugin has.
    @note This macro is required.
  */
-#define DISTRHO_PLUGIN_NUM_INPUTS 2
+#define DISTRHO_PLUGIN_NUM_INPUTS 1
 
 /**
    Number of audio outputs the plugin has.
    @note This macro is required.
  */
-#define DISTRHO_PLUGIN_NUM_OUTPUTS 2
+#define DISTRHO_PLUGIN_NUM_OUTPUTS 1
 
 /**
    The plugin URI when exporting in LV2 format.
